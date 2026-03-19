@@ -1,0 +1,23 @@
+# Secrets
+.env
+*.pem
+*.key
+
+# Claude local settings
+.claude/settings.local.json
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+
+# Data files — raw trades and wallet age cache are large/sensitive
+# Raw markets metadata is OK to commit (small, public data)
+polymarket_backtest/data/raw_trades/
+polymarket_backtest/data/wallet_ages.json
+
+# Reports
+polymarket_backtest/data/report.json
+polymarket_monitor/data/

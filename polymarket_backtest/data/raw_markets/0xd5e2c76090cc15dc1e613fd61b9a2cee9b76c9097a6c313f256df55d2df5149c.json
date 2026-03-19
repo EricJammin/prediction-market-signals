@@ -1,0 +1,13 @@
+{
+  "condition_id": "0xd5e2c76090cc15dc1e613fd61b9a2cee9b76c9097a6c313f256df55d2df5149c",
+  "slug": "will-the-iranian-regime-fall-in-2025",
+  "question": "Will the Iranian regime fall in 2025?",
+  "category": "",
+  "creation_date": "2025-06-17",
+  "resolution_date": "2025-12-31",
+  "resolved": true,
+  "resolution": "NO",
+  "yes_token_id": "86546134986361680573113760503922996133227259892780182537815828356227417788077",
+  "no_token_id": "102751443583062027363518660027805998371035426655241227065738215911615033552627",
+  "volume_usdc": 4992689.343189
+}

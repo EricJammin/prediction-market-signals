@@ -1,0 +1,13 @@
+{
+  "condition_id": "0x62f31557b0e55475789b57a94ac385ee438ef9f800117fd1b823a0797b1fdd68",
+  "slug": "will-the-us-invade-venezuela-in-2025",
+  "question": "Will the U.S. invade Venezuela by December 31, 2025?",
+  "category": "",
+  "creation_date": "2025-09-06",
+  "resolution_date": "2025-12-31",
+  "resolved": true,
+  "resolution": "NO",
+  "yes_token_id": "28510305071001528588232263061858620884071686412926518442255373887747921822222",
+  "no_token_id": "81046748927736052916392088237473207584765682653658270710464996485326088705956",
+  "volume_usdc": 2764332.083129
+}

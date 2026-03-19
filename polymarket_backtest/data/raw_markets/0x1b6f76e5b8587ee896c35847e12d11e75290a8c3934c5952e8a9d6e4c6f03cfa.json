@@ -1,0 +1,13 @@
+{
+  "condition_id": "0x1b6f76e5b8587ee896c35847e12d11e75290a8c3934c5952e8a9d6e4c6f03cfa",
+  "slug": "khamenei-out-as-supreme-leader-of-iran-in-2025",
+  "question": "Khamenei out as Supreme Leader of Iran in 2025?",
+  "category": "",
+  "creation_date": "2024-12-29",
+  "resolution_date": "2025-12-31",
+  "resolved": true,
+  "resolution": "NO",
+  "yes_token_id": "75505728818237076147318796536066812362152358606307154083407489467059230821371",
+  "no_token_id": "67369669271127885658944531351746308398542291270457462650056001798232262328240",
+  "volume_usdc": 10993955.915443
+}

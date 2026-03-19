@@ -1,0 +1,13 @@
+{
+  "condition_id": "0x41e47408f8ab39b46a9d9e3c9b15ebd62f1d795eb072ff46df3d376c09eb583e",
+  "slug": "us-x-iran-meeting-by-february-6-2026",
+  "question": "US x Iran meeting by February 6, 2026?",
+  "category": "",
+  "creation_date": "2026-02-03",
+  "resolution_date": "2026-02-13",
+  "resolved": true,
+  "resolution": "YES",
+  "yes_token_id": "105999601513560278968876871354011816371662460306447522911118766757022097746482",
+  "no_token_id": "25841427349099021030477407408202074144234948026062046702103181016766959946974",
+  "volume_usdc": 22688333.506431
+}

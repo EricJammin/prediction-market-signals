@@ -1,0 +1,13 @@
+{
+  "condition_id": "0xb3ebf217cf2f393a66030c072b04b893268506923e01b23f1bcf3504c3d319c2",
+  "slug": "iran-strike-on-israel-by-february-28",
+  "question": "Iran Strike on Israel by February 28?",
+  "category": "",
+  "creation_date": "2026-01-12",
+  "resolution_date": "2026-02-28",
+  "resolved": true,
+  "resolution": "YES",
+  "yes_token_id": "40785716512154576515459243689202568309525193875518923120378208451954796944952",
+  "no_token_id": "106781951453459341172931170142261905339895131361349246923677059593112949675278",
+  "volume_usdc": 5006328.70815
+}

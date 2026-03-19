@@ -1,0 +1,13 @@
+{
+  "condition_id": "0x5cb20a760bc2bba3b87fae547a25cbac73f702abfa30e4a801e65f8b9f15d8ff",
+  "slug": "will-the-us-next-strike-iran-during-the-week-of-march-1-7",
+  "question": "Will the US next strike Iran during the week of March 1-7, 2026?",
+  "category": "geopolitics",
+  "creation_date": "",
+  "resolution_date": "2026-03-07",
+  "resolved": true,
+  "resolution": "YES",
+  "yes_token_id": "50385878176481049767607954988440976722236342384211272398753760144136638714594",
+  "no_token_id": "3390526733710743893122959715273314210300524688040260494733389399276200926270",
+  "volume_usdc": 2542437
+}
