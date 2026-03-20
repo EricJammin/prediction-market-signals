@@ -90,3 +90,6 @@ MIN_TRADE_SIZE_USDC    = 10.0
 # ── State ──────────────────────────────────────────────────────────────────────
 DB_PATH = "data/monitor.db"
 PIZZINT_STATE_PATH = "data/pizzint_state.json"
+
+# ── Daily digest email ─────────────────────────────────────────────────────────
+DIGEST_HOUR_UTC = 23  # 6 PM ET = 23 UTC

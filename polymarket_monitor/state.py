@@ -246,6 +246,14 @@ class StateDB:
         )
         self._conn.commit()
 
+    def get_recent_alerts(self, since_ts: int) -> list[dict]:
+        """Return alerts_log rows fired since since_ts, newest first."""
+        rows = self._conn.execute(
+            "SELECT * FROM alerts_log WHERE fired_at >= ? ORDER BY fired_at DESC",
+            (since_ts,),
+        ).fetchall()
+        return [dict(r) for r in rows]
+
     def get_market_meta(self, market_id: str) -> dict | None:
         row = self._conn.execute(
             "SELECT * FROM poll_state WHERE market_id = ?", (market_id,)
