@@ -9,8 +9,8 @@ Alert format example:
   Volume: 12.4× baseline ($24,000 vs $1,940/hr)
   Price: YES $0.18 → NOW $0.31 (+72%)
   News: ✅ No recent articles found (unexplained)
-  PizzINT: — (not monitored)
-  Insider tracker: — (no alerts)
+  PizzINT: 0.0 (DOUGHCON 4)
+  Insider tracker: —
   Resolution: 2026-02-28
   Score: 2.0 / 4.0
   [View on Polymarket]
@@ -21,6 +21,7 @@ from __future__ import annotations
 import html
 import logging
 import os
+import re
 
 import httpx
 
@@ -168,19 +169,33 @@ class TelegramAlerter:
                 top = e(alert.news_result.matched_articles[0][:80])
                 news_line += f"\n  └ <i>{top}</i>"
 
+        # PizzINT line
+        if alert.pizzint_level is not None:
+            pizzint_str = f"{alert.pizzint_score:.1f} (DOUGHCON {alert.pizzint_level})"
+            pizzint_line = f"PizzINT: {pizzint_str}"
+        else:
+            pizzint_line = "PizzINT: — (API unavailable)"
+
         # Scores
+        if alert.pizzint_level is not None:
+            pizzint_score_str = f"{alert.pizzint_score:.1f} (DC{alert.pizzint_level})"
+        else:
+            pizzint_score_str = "—"
         score_line = (
             f"Score: <b>{alert.composite_score:.1f}</b> / 4.0"
             f"  (signal={alert.signal_c_score:.1f}"
             f"  news={alert.news_score:.1f}"
-            f"  pizzint=—  insider=—)"
+            f"  pizzint={pizzint_score_str}"
+            f"  insider=—)"
         )
 
-        # Link
-        if alert.slug:
-            link = f'<a href="{POLYMARKET_BASE}/{e(alert.slug)}">View on Polymarket</a>'
-        else:
+        # Link — prefer event_slug (canonical event URL), fall back to market slug
+        # with date-suffix truncation as last resort for expired markets
+        url_slug = alert.event_slug or alert.slug or ""
+        if not url_slug:
             link = f'<a href="https://polymarket.com">Polymarket</a>'
+        else:
+            link = f'<a href="{POLYMARKET_BASE}/{e(url_slug)}">View on Polymarket</a>'
 
         return "\n".join([
             f"{tier_emoji} <b>{alert.tier} ALERT</b>: {question}",
@@ -188,8 +203,8 @@ class TelegramAlerter:
             vol_line,
             price_line,
             news_line,
-            f"PizzINT: — (Phase 2)",
-            f"Insider tracker: — (Phase 2)",
+            pizzint_line,
+            "Insider tracker: —",
             f"Resolution: {resolution}",
             score_line,
             link,

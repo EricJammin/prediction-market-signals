@@ -68,6 +68,7 @@ CREATE TABLE IF NOT EXISTS poll_state (
     resolution_date  TEXT,
     volume_usdc      REAL,
     slug             TEXT,
+    event_slug       TEXT,
     yes_token_id     TEXT,
     no_token_id      TEXT,
     pizzint_relevant INTEGER NOT NULL DEFAULT 0,
@@ -89,6 +90,7 @@ class StateDB:
         # Migrations for columns added after initial deployment
         for sql in [
             "ALTER TABLE poll_state ADD COLUMN pizzint_relevant INTEGER NOT NULL DEFAULT 0",
+            "ALTER TABLE poll_state ADD COLUMN event_slug TEXT",
         ]:
             try:
                 self._conn.execute(sql)
@@ -218,6 +220,7 @@ class StateDB:
         resolution_date: str,
         volume_usdc: float,
         slug: str,
+        event_slug: str = "",
         yes_token_id: str = "",
         no_token_id: str = "",
         pizzint_relevant: bool = False,
@@ -227,21 +230,23 @@ class StateDB:
             """
             INSERT INTO poll_state
                 (market_id, question, category, resolution_date, volume_usdc,
-                 slug, yes_token_id, no_token_id, pizzint_relevant, added_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                 slug, event_slug, yes_token_id, no_token_id, pizzint_relevant, added_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ON CONFLICT(market_id) DO UPDATE SET
                 question         = excluded.question,
                 category         = excluded.category,
                 resolution_date  = excluded.resolution_date,
                 volume_usdc      = excluded.volume_usdc,
                 slug             = excluded.slug,
+                event_slug       = excluded.event_slug,
                 yes_token_id     = excluded.yes_token_id,
                 no_token_id      = excluded.no_token_id,
                 pizzint_relevant = excluded.pizzint_relevant
             """,
             (
                 market_id, question, category, resolution_date, volume_usdc,
-                slug, yes_token_id, no_token_id, int(pizzint_relevant), int(time.time()),
+                slug, event_slug, yes_token_id, no_token_id,
+                int(pizzint_relevant), int(time.time()),
             ),
         )
         self._conn.commit()

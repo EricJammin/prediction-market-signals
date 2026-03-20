@@ -43,7 +43,8 @@ class Alert:
     signal_c_score: float
     news_score: float
     pizzint_score: float
-    insider_score: float          # 0.0 in Phase 1
+    pizzint_level: int | None             # None = API unavailable (show — in alerts)
+    insider_score: float                  # 0.0 in Phase 1
     surge_event: SurgeEvent
     news_result: NewsResult
     yes_price: float | None
@@ -51,6 +52,7 @@ class Alert:
     market_question: str
     resolution_date: str
     slug: str
+    event_slug: str = ""                  # canonical Polymarket event URL slug
     yes_price_change_pct: float | None = None  # % change from 24h ago (if available)
 
 
@@ -113,9 +115,12 @@ class AlertAggregator:
 
         # PizzINT score: only applied for US military action markets
         pizzint_relevant = market_meta.get("pizzint_relevant", False)
-        if pizzint_relevant and self._pizzint is not None:
-            pizzint_score = self._pizzint.score
+        if self._pizzint is not None:
+            # level is always set once the API has been called, even if score is 0.0
+            pizzint_level: int | None = self._pizzint.level
+            pizzint_score = self._pizzint.score if pizzint_relevant else 0.0
         else:
+            pizzint_level = None
             pizzint_score = 0.0
 
         insider_score = 0.0  # placeholder — Phase 2
@@ -142,6 +147,7 @@ class AlertAggregator:
             signal_c_score=signal_c_score,
             news_score=news_score,
             pizzint_score=pizzint_score,
+            pizzint_level=pizzint_level,
             insider_score=insider_score,
             surge_event=surge_event,
             news_result=news_result,
@@ -150,4 +156,5 @@ class AlertAggregator:
             market_question=question,
             resolution_date=market_meta.get("resolution_date", ""),
             slug=market_meta.get("slug", ""),
+            event_slug=market_meta.get("event_slug", ""),
         )

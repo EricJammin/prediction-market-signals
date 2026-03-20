@@ -238,9 +238,16 @@ def _normalize_gamma_market(raw: dict) -> dict:
     else:
         resolution = None
 
+    # Extract event-level slug from the events array (used for Polymarket URLs).
+    # events[0].slug is the canonical event page slug and differs from the
+    # market slug for grouped/series markets.
+    events = raw.get("events") or []
+    event_slug = events[0].get("slug", "") if events else ""
+
     return {
         "condition_id":   raw.get("conditionId") or raw.get("condition_id") or "",
         "slug":           raw.get("slug") or "",
+        "event_slug":     event_slug,
         "question":       raw.get("question") or raw.get("title") or "",
         "category":       raw.get("category") or "",
         "resolution_date": raw.get("endDateIso") or raw.get("endDate") or "",
@@ -297,6 +304,7 @@ class MarketWatchlist:
                     resolution_date=market.get("resolution_date", ""),
                     volume_usdc=market.get("volume_usdc", 0.0),
                     slug=market.get("slug", ""),
+                    event_slug=market.get("event_slug", ""),
                     yes_token_id=market.get("yes_token_id", ""),
                     no_token_id=market.get("no_token_id", ""),
                     pizzint_relevant=market.get("pizzint_relevant", False),
