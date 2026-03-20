@@ -258,11 +258,20 @@ class StateDB:
         row = self._conn.execute(
             "SELECT * FROM poll_state WHERE market_id = ?", (market_id,)
         ).fetchone()
-        return dict(row) if row else None
+        if row is None:
+            return None
+        d = dict(row)
+        d["condition_id"] = d["market_id"]  # alias for cross-module compatibility
+        return d
 
     def get_all_watched_markets(self) -> list[dict]:
         rows = self._conn.execute("SELECT * FROM poll_state").fetchall()
-        return [dict(r) for r in rows]
+        result = []
+        for r in rows:
+            d = dict(r)
+            d["condition_id"] = d["market_id"]  # alias for cross-module compatibility
+            result.append(d)
+        return result
 
     # ── wallet_positions (Signal A state) ──────────────────────────────────────
 

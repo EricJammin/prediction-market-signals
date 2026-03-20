@@ -314,53 +314,18 @@ class MarketWatchlist:
     # ── Private ────────────────────────────────────────────────────────────────
 
     def _discover_from_gamma(self) -> list[dict]:
-        """Fetch all active unresolved markets from Gamma API, filtered by category/volume."""
-        markets: list[dict] = []
-        page_size = 100
-        offset = 0
+        """
+        Dynamic market discovery from Gamma API.
 
-        while True:
-            try:
-                resp = self._session.get(
-                    f"{config.GAMMA_API_BASE}/markets",
-                    params={
-                        "active": "true",
-                        "closed": "false",
-                        "limit": page_size,
-                        "offset": offset,
-                    },
-                    headers={"User-Agent": "Mozilla/5.0"},
-                    timeout=30,
-                )
-                resp.raise_for_status()
-                raw_list = resp.json()
-            except Exception as exc:
-                logger.warning("Gamma API error at offset %d: %s", offset, exc)
-                break
+        NOTE: The Gamma /markets endpoint does not return a 'category' field,
+        so category-based filtering does not work. Dynamic discovery is
+        disabled — the curated SEED_MARKETS list is the sole source of
+        monitored markets.
 
-            if not isinstance(raw_list, list) or not raw_list:
-                break
-
-            for raw in raw_list:
-                m = _normalize_gamma_market(raw)
-                if m["resolved"]:
-                    continue
-                cat = m["category"].lower()
-                if not any(c in cat for c in config.GAMMA_WATCHLIST_CATEGORIES):
-                    continue
-                if m["volume_usdc"] < config.MIN_MARKET_VOLUME_USDC:
-                    continue
-                if not m["condition_id"]:
-                    continue
-                markets.append(m)
-
-            if len(raw_list) < page_size:
-                break  # last page
-            offset += page_size
-            time.sleep(config.REQUEST_DELAY_SECONDS)
-
-        logger.info("Gamma API discovery: %d qualifying markets", len(markets))
-        return markets
+        Use `python main.py --update-watchlist` to scan for new candidates
+        manually (uses keyword/slug matching instead of category filter).
+        """
+        return []
 
     def _load_seeds(self) -> list[dict]:
         """

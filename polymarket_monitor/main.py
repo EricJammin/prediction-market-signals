@@ -76,7 +76,8 @@ def backfill_market(
     Skips if the market already has a last_trade_ts recorded (already seeded).
     """
     market_id = market["condition_id"]
-    if db.get_last_trade_ts(market_id) > 0:
+    last_ts = db.get_last_trade_ts(market_id)
+    if last_ts is not None and last_ts > 0:
         logger.debug("Market %s already has trade history — skipping backfill.", market_id[:16])
         return
 
@@ -128,11 +129,12 @@ def poll_market(
     Returns True if an alert was fired.
     """
     market_id = market["condition_id"]
-    since_ts = db.get_last_trade_ts(market_id)
+    since_ts = db.get_last_trade_ts(market_id) or 0
     if since_ts == 0:
         # Not yet backfilled; skip surge detection but record current time so
         # subsequent polls have an anchor.
-        db.set_last_trade_ts(market_id, int(time.time()) - config.POLL_INTERVAL_SECONDS)
+        if not dry_run:
+            db.set_last_trade_ts(market_id, int(time.time()) - config.POLL_INTERVAL_SECONDS)
         return False
 
     trades = SignalC.fetch_trades_since(
