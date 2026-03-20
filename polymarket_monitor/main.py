@@ -425,9 +425,9 @@ def main() -> None:
         signal_c   = SignalC(db)
         signal_a   = SignalA(db)
         watchlist  = MarketWatchlist(db)
-        aggregator = AlertAggregator(db, news_checker)
-        alerter    = TelegramAlerter()
         pizzint    = PizzINTMonitor()
+        aggregator = AlertAggregator(db, news_checker, pizzint=pizzint)
+        alerter    = TelegramAlerter()
         email      = EmailAlerter()
 
         if args.backfill:

@@ -4,7 +4,7 @@ AlertAggregator: composite scoring and tier classification.
 Scoring per source (all contribute 0.0 / 0.5 / 1.0):
   signal_c  — volume surge score from SignalC.detect_surge()
   news      — news cross-reference score from NewsChecker.check()
-  pizzint   — PizzINT DOUGHCON level (placeholder, always 0.0 in Phase 1)
+  pizzint   — PizzINT DOUGHCON score (live from API; 0.0 for non-military markets)
   insider   — open-source insider tracker alert (placeholder, always 0.0 in Phase 1)
 
 Composite = signal_c + news + pizzint + insider  (max 4.0)
@@ -28,6 +28,7 @@ from dataclasses import dataclass, field
 
 import config
 from news_checker import NewsChecker, NewsResult
+from pizzint_monitor import PizzINTMonitor
 from signal_c import SurgeEvent
 from state import StateDB
 
@@ -41,7 +42,7 @@ class Alert:
     composite_score: float
     signal_c_score: float
     news_score: float
-    pizzint_score: float          # 0.0 in Phase 1
+    pizzint_score: float
     insider_score: float          # 0.0 in Phase 1
     surge_event: SurgeEvent
     news_result: NewsResult
@@ -54,9 +55,15 @@ class Alert:
 
 
 class AlertAggregator:
-    def __init__(self, db: StateDB, news_checker: NewsChecker) -> None:
+    def __init__(
+        self,
+        db: StateDB,
+        news_checker: NewsChecker,
+        pizzint: PizzINTMonitor | None = None,
+    ) -> None:
         self._db = db
         self._news = news_checker
+        self._pizzint = pizzint
 
     def evaluate(
         self,
@@ -104,9 +111,14 @@ class AlertAggregator:
         news_result = self._news.check(question, keywords)
         news_score = news_result.score
 
-        # Placeholders — Phase 2 will populate these
-        pizzint_score = 0.0
-        insider_score = 0.0
+        # PizzINT score: only applied for US military action markets
+        pizzint_relevant = market_meta.get("pizzint_relevant", False)
+        if pizzint_relevant and self._pizzint is not None:
+            pizzint_score = self._pizzint.score
+        else:
+            pizzint_score = 0.0
+
+        insider_score = 0.0  # placeholder — Phase 2
 
         composite = signal_c_score + news_score + pizzint_score + insider_score
 

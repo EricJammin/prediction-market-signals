@@ -5,16 +5,20 @@ PizzINT (pizzint.watch / t.me/pizzintwatchers) publishes a DOUGHCON level
 (1–5) indicating US military force posture. DOUGHCON 1–2 correlates with
 imminent or high-probability US military action.
 
-Two fetch methods (tried in order):
-  Option A — Telegram Bot API getUpdates:
+Three fetch methods (tried in order):
+  Option A — JSON API (pizzint.watch/api/dashboard-data):
+    No configuration required. Returns structured JSON with defcon_level,
+    overall_index, active_spikes, per-location popularity data. This is the
+    primary and most reliable method.
+
+  Option B — Telegram Bot API getUpdates:
     Requires PIZZINT_CHANNEL_ID in .env (the channel/group chat ID where
     DOUGHCON updates appear) and TELEGRAM_BOT_TOKEN to be set. The bot must
     be a member of that chat. Parses incoming messages for DOUGHCON keywords.
 
-  Option B — Web scraping (pizzint.watch):
+  Option C — Web scraping (pizzint.watch):
     No configuration required. Scrapes the public website with regex fallbacks
-    covering several possible HTML layouts. Used when Option A is not configured
-    or fails.
+    covering several possible HTML layouts. Used when Options A and B fail.
 
 DOUGHCON score mapping (per BUILD_SPEC.md):
   5 = Peacetime   → 0.0
@@ -49,6 +53,7 @@ import config
 
 logger = logging.getLogger(__name__)
 
+PIZZINT_API_URL = "https://www.pizzint.watch/api/dashboard-data"
 PIZZINT_URL = "https://pizzint.watch"
 
 # DOUGHCON level → composite score contribution
@@ -108,6 +113,12 @@ class PizzINTMonitor:
         self._source: str         = "none"
         self._last_update_id: int = 0      # Telegram getUpdates cursor
 
+        # Extended fields from the JSON API (best-effort; None if unavailable)
+        self._overall_index: int | None    = None
+        self._active_spikes: int | None    = None
+        self._has_active_spikes: bool      = False
+        self._spike_locations: list[str]   = []   # names of spiking locations
+
         self._last_refresh: float = 0.0
         self._load_state()
 
@@ -141,6 +152,21 @@ class PizzINTMonitor:
         """Unix timestamp of last confirmed level update."""
         return self._updated_at
 
+    @property
+    def overall_index(self) -> int | None:
+        """Raw PizzINT overall index (0–100+). Only set when API fetch succeeds."""
+        return self._overall_index
+
+    @property
+    def has_active_spikes(self) -> bool:
+        """True if any tracked location is currently spiking above baseline."""
+        return self._has_active_spikes
+
+    @property
+    def spike_locations(self) -> list[str]:
+        """Names of locations currently flagged as spiking."""
+        return list(self._spike_locations)
+
     def refresh(self) -> float:
         """
         Poll PizzINT for the current DOUGHCON level. Rate-limited to once
@@ -168,7 +194,10 @@ class PizzINTMonitor:
             self._updated_at = int(now)
             self._save_state()
         elif new_level is not None:
-            logger.debug("DOUGHCON: %d (%s) — no change", self._level, self.label)
+            logger.debug(
+                "DOUGHCON: %d (%s) — no change (index=%s, spikes=%s)",
+                self._level, self.label, self._overall_index, self._has_active_spikes,
+            )
 
         return self.score
 
@@ -176,12 +205,29 @@ class PizzINTMonitor:
         """Short status string for alert messages and digest."""
         age_min = int((time.time() - self._updated_at) / 60) if self._updated_at else None
         age_str = f", updated {age_min}m ago" if age_min is not None else ""
-        return f"DOUGHCON {self._level} — {self.label} (score {self.score:.1f}{age_str})"
+        index_str = f", index {self._overall_index}" if self._overall_index is not None else ""
+        spike_str = ""
+        if self._has_active_spikes and self._spike_locations:
+            spike_str = f" | SPIKES: {', '.join(self._spike_locations)}"
+        elif self._has_active_spikes:
+            spike_str = " | SPIKES ACTIVE"
+        return (
+            f"DOUGHCON {self._level} — {self.label} "
+            f"(score {self.score:.1f}{index_str}{age_str}){spike_str}"
+        )
 
     # ── Fetch dispatch ─────────────────────────────────────────────────────────
 
     def _fetch(self) -> int | None:
-        """Try Option A (Telegram) then Option B (web). Returns level or None."""
+        """
+        Try Option A (JSON API) → Option B (Telegram) → Option C (web scrape).
+        Returns level or None on total failure.
+        """
+        level = self._fetch_from_api()
+        if level is not None:
+            self._source = "api"
+            return level
+
         if self._channel_id and self._bot_token:
             level = self._fetch_from_telegram()
             if level is not None:
@@ -192,6 +238,43 @@ class PizzINTMonitor:
         if level is not None:
             self._source = "web"
         return level
+
+    # ── Option A: JSON API ─────────────────────────────────────────────────────
+
+    def _fetch_from_api(self) -> int | None:
+        """
+        Fetch structured data from https://www.pizzint.watch/api/dashboard-data.
+        Populates _overall_index, _active_spikes, _has_active_spikes, and
+        _spike_locations as side-effects. Returns the defcon_level or None.
+        """
+        try:
+            resp = self._session.get(PIZZINT_API_URL, timeout=15)
+            resp.raise_for_status()
+            data = resp.json()
+        except Exception as exc:
+            logger.warning("PizzINT API fetch failed: %s", exc)
+            return None
+
+        if not data.get("success"):
+            logger.warning("PizzINT API returned success=false")
+            return None
+
+        level = data.get("defcon_level")
+        if level is None or not (1 <= int(level) <= 5):
+            logger.warning("PizzINT API: missing or invalid defcon_level: %r", level)
+            return None
+
+        # Store extended fields for properties / status_line
+        self._overall_index     = data.get("overall_index")
+        self._active_spikes     = data.get("active_spikes")
+        self._has_active_spikes = bool(data.get("has_active_spikes", False))
+        self._spike_locations   = [
+            loc["name"]
+            for loc in data.get("data", [])
+            if loc.get("is_spike")
+        ]
+
+        return int(level)
 
     # ── Option A: Telegram Bot API ─────────────────────────────────────────────
 
@@ -278,10 +361,13 @@ class PizzINTMonitor:
             return
         try:
             state = json.loads(path.read_text())
-            self._level           = int(state.get("doughcon_level", 5))
-            self._updated_at      = int(state.get("updated_at", 0))
-            self._source          = state.get("source", "none")
-            self._last_update_id  = int(state.get("last_telegram_update_id", 0))
+            self._level              = int(state.get("doughcon_level", 5))
+            self._updated_at         = int(state.get("updated_at", 0))
+            self._source             = state.get("source", "none")
+            self._last_update_id     = int(state.get("last_telegram_update_id", 0))
+            self._overall_index      = state.get("overall_index")
+            self._has_active_spikes  = bool(state.get("has_active_spikes", False))
+            self._spike_locations    = state.get("spike_locations", [])
             logger.debug(
                 "PizzINT: loaded state — DOUGHCON %d (%s) from %s",
                 self._level, self.label, self._source,
@@ -297,6 +383,9 @@ class PizzINTMonitor:
             "updated_at":               self._updated_at,
             "source":                   self._source,
             "last_telegram_update_id":  self._last_update_id,
+            "overall_index":            self._overall_index,
+            "has_active_spikes":        self._has_active_spikes,
+            "spike_locations":          self._spike_locations,
         }, indent=2))
 
 
