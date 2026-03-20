@@ -176,7 +176,7 @@ def poll_market(
         return False
 
     logger.info(
-        "SURGE detected: %s  ratio=%.1fx  vol=$%,.0f  YES=%.3f",
+        "SURGE detected: %s  ratio=%.1fx  vol=$%.0f  YES=%.3f",
         market_id[:16],
         surge.surge_ratio,
         surge.surge_volume_usdc,
