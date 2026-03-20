@@ -27,6 +27,7 @@ import config
 from alert_aggregator import AlertAggregator
 from market_watchlist import MarketWatchlist
 from news_checker import NewsChecker
+from pizzint_monitor import PizzINTMonitor
 from signal_a import SignalA
 from signal_c import SignalC
 from state import StateDB
@@ -204,12 +205,20 @@ def run_poll_cycle(
     aggregator: AlertAggregator,
     alerter: TelegramAlerter,
     db: StateDB,
+    pizzint: PizzINTMonitor | None = None,
 ) -> int:
     """
     Single pass over all watched markets. Returns count of Signal C alerts fired.
     Signal A alerts are fired inline within poll_market and counted separately.
     Each market is wrapped in try/except so one bad market doesn't abort the cycle.
     """
+    # Refresh PizzINT once per cycle (rate-limited internally)
+    if pizzint is not None:
+        try:
+            pizzint.refresh()
+        except Exception as exc:
+            logger.warning("PizzINT refresh error: %s", exc)
+
     markets = watchlist.refresh()  # rate-limited internally; no-op unless 1 hr elapsed
     alerts_fired = 0
 
@@ -373,6 +382,7 @@ def main() -> None:
         watchlist = MarketWatchlist(db)
         aggregator = AlertAggregator(db, news_checker)
         alerter = TelegramAlerter()
+        pizzint = PizzINTMonitor()
 
         if args.backfill:
             run_backfill(watchlist, signal_c, db)
@@ -401,14 +411,14 @@ def main() -> None:
         logger.info("Startup backfill complete. Entering poll loop…")
 
         if args.once:
-            run_poll_cycle(watchlist, signal_c, signal_a, aggregator, alerter, db)
+            run_poll_cycle(watchlist, signal_c, signal_a, aggregator, alerter, db, pizzint)
             return
 
         # Continuous loop
         while _running:
             poll_start = time.time()
             try:
-                run_poll_cycle(watchlist, signal_c, signal_a, aggregator, alerter, db)
+                run_poll_cycle(watchlist, signal_c, signal_a, aggregator, alerter, db, pizzint)
                 # Prune stale volume data (keep last 7 days)
                 db.prune_old_volumes(
                     cutoff_ts=int(time.time()) - config.SURGE_LOOKBACK_HOURS * 3600

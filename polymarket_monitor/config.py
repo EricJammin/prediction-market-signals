@@ -89,3 +89,4 @@ MIN_TRADE_SIZE_USDC    = 10.0
 
 # ── State ──────────────────────────────────────────────────────────────────────
 DB_PATH = "data/monitor.db"
+PIZZINT_STATE_PATH = "data/pizzint_state.json"
